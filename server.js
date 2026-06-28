@@ -24,43 +24,41 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-/* MEMORY ROOMS */
-let rooms = {};
+/* MEMORY STORE */
+const rooms = {};
 
+/* SOCKET */
 io.on("connection", (socket) => {
 
-  console.log("user connected:", socket.id);
+  console.log("CONNECTED:", socket.id);
 
   socket.on("join-room", (room) => {
-
     if (!room) return;
 
     socket.join(room);
 
-    if (!rooms[room]) {
-      rooms[room] = [];
-    }
+    if (!rooms[room]) rooms[room] = [];
 
     socket.emit("chat-history", rooms[room]);
   });
 
   socket.on("send-message", (data) => {
 
-    const room = data.room;
+    if (!data || !data.room) return;
 
-    if (!room) return;
+    if (!rooms[data.room]) rooms[data.room] = [];
 
-    if (!rooms[room]) {
-      rooms[room] = [];
-    }
+    rooms[data.room].push(data);
 
-    rooms[room].push(data);
-
-    io.to(room).emit("receive-message", data);
+    io.to(data.room).emit("receive-message", data);
   });
 
   socket.on("typing", (data) => {
     socket.broadcast.emit("typing", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("DISCONNECTED:", socket.id);
   });
 
 });
@@ -68,5 +66,5 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+  console.log("Server running on", PORT);
 });
