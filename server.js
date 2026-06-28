@@ -1,3 +1,5 @@
+let rooms = {};
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -23,12 +25,37 @@ app.get("/health", (req, res) => {
 });
 
 io.on("connection", (socket) => {
+
   console.log("user connected:", socket.id);
 
-  socket.on("send-message", (data) => {
-    io.emit("receive-message", data);
+  /* JOIN ROOM */
+  socket.on("join-room", (room) => {
+
+    socket.join(room);
+
+    if (!rooms[room]) {
+      rooms[room] = [];
+    }
+
+    // send old messages to user
+    socket.emit("chat-history", rooms[room]);
   });
 
+  /* SEND MESSAGE */
+  socket.on("send-message", (data) => {
+
+    let room = data.room;
+
+    if (!rooms[room]) {
+      rooms[room] = [];
+    }
+
+    rooms[room].push(data); // 🔥 SAVE MESSAGE
+
+    io.to(room).emit("receive-message", data); // send to all in room
+  });
+
+  /* TYPING */
   socket.on("typing", (data) => {
     socket.broadcast.emit("typing", data);
   });
@@ -36,6 +63,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("user disconnected:", socket.id);
   });
+
 });
 
 const PORT = process.env.PORT || 3000;
