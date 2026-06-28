@@ -14,17 +14,14 @@ const io = new Server(server, {
   transports: ["polling", "websocket"]
 });
 
+/* STATIC FRONTEND */
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 app.get("/", (req, res) => {
   res.send("ChitChat backend running 💌");
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-/* MEMORY STORE */
+/* ROOM MEMORY */
 const rooms = {};
 
 /* SOCKET */
