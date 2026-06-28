@@ -1,5 +1,3 @@
-let rooms = {};
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -10,8 +8,10 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
-  }
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  transports: ["websocket", "polling"]
 });
 
 app.use(express.static(path.join(__dirname, "../frontend")));
@@ -24,6 +24,10 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+/* ===== IN-MEMORY ROOMS ===== */
+let rooms = {};
+
+/* SOCKET */
 io.on("connection", (socket) => {
 
   console.log("user connected:", socket.id);
@@ -31,28 +35,32 @@ io.on("connection", (socket) => {
   /* JOIN ROOM */
   socket.on("join-room", (room) => {
 
+    if (!room) return;
+
     socket.join(room);
 
     if (!rooms[room]) {
       rooms[room] = [];
     }
 
-    // send old messages to user
+    // send old messages
     socket.emit("chat-history", rooms[room]);
   });
 
   /* SEND MESSAGE */
   socket.on("send-message", (data) => {
 
-    let room = data.room;
+    const room = data.room;
+
+    if (!room) return;
 
     if (!rooms[room]) {
       rooms[room] = [];
     }
 
-    rooms[room].push(data); // 🔥 SAVE MESSAGE
+    rooms[room].push(data);
 
-    io.to(room).emit("receive-message", data); // send to all in room
+    io.to(room).emit("receive-message", data);
   });
 
   /* TYPING */
