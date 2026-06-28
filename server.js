@@ -11,7 +11,7 @@ const io = new Server(server, {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  transports: ["websocket", "polling"]
+  transports: ["polling", "websocket"]
 });
 
 app.use(express.static(path.join(__dirname, "../frontend")));
@@ -24,7 +24,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-/* ROOMS STORAGE */
+/* ROOM STORAGE */
 let rooms = {};
 
 /* SOCKET */
