@@ -24,15 +24,13 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-/* ROOM STORAGE */
+/* ROOMS MEMORY */
 let rooms = {};
 
-/* SOCKET */
 io.on("connection", (socket) => {
 
   console.log("user connected:", socket.id);
 
-  /* JOIN ROOM */
   socket.on("join-room", (room) => {
 
     if (!room) return;
@@ -43,27 +41,22 @@ io.on("connection", (socket) => {
       rooms[room] = [];
     }
 
-    // send old messages
     socket.emit("chat-history", rooms[room]);
   });
 
-  /* SEND MESSAGE */
   socket.on("send-message", (data) => {
 
-    const room = data.room;
+    if (!data.room) return;
 
-    if (!room) return;
-
-    if (!rooms[room]) {
-      rooms[room] = [];
+    if (!rooms[data.room]) {
+      rooms[data.room] = [];
     }
 
-    rooms[room].push(data);
+    rooms[data.room].push(data);
 
-    io.to(room).emit("receive-message", data);
+    io.to(data.room).emit("receive-message", data);
   });
 
-  /* TYPING */
   socket.on("typing", (data) => {
     socket.broadcast.emit("typing", data);
   });
