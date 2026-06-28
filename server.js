@@ -4,76 +4,42 @@ const { Server } = require("socket.io");
 const path = require("path");
 
 const app = express();
-
 const server = http.createServer(app);
 
-/* SOCKET.IO */
 const io = new Server(server, {
-cors: {
-origin: "*",
-methods: ["GET", "POST"]
-}
+  cors: {
+    origin: "*"
+  }
 });
 
-/* FRONTEND */
-app.use(
-express.static(
-path.join(__dirname, "../frontend")
-)
-);
+app.use(express.static(path.join(__dirname, "../frontend")));
 
-/* TEST */
 app.get("/", (req, res) => {
-res.send("ChitChat backend running 💌");
+  res.send("ChitChat backend running 💌");
 });
 
-/* SOCKET */
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 io.on("connection", (socket) => {
+  console.log("user connected:", socket.id);
 
-console.log("user connected");
+  socket.on("send-message", (data) => {
+    io.emit("receive-message", data);
+  });
 
-/* SEND MESSAGE */
-socket.on("send-message", (data) => {
+  socket.on("typing", (data) => {
+    socket.broadcast.emit("typing", data);
+  });
 
-io.emit(
-"receive-message",
-data
-);
-
+  socket.on("disconnect", () => {
+    console.log("user disconnected:", socket.id);
+  });
 });
 
-/* TYPING */
-socket.on("typing", (data) => {
+const PORT = process.env.PORT || 3000;
 
-socket.broadcast.emit(
-"typing",
-data
-);
-
+server.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });
-
-/* DISCONNECT */
-socket.on("disconnect", () => {
-
-console.log(
-"user disconnected"
-);
-
-});
-
-});
-
-/* PORT */
-const PORT =
-process.env.PORT || 3000;
-
-server.listen(
-PORT,
-() => {
-
-console.log(
-`Server running on ${PORT}`
-);
-
-}
-);
