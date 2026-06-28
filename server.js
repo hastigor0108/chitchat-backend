@@ -24,7 +24,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-/* ===== IN-MEMORY ROOMS ===== */
+/* ROOMS STORAGE */
 let rooms = {};
 
 /* SOCKET */
