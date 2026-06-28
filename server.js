@@ -24,7 +24,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-/* ROOMS MEMORY */
+/* MEMORY ROOMS */
 let rooms = {};
 
 io.on("connection", (socket) => {
@@ -46,23 +46,21 @@ io.on("connection", (socket) => {
 
   socket.on("send-message", (data) => {
 
-    if (!data.room) return;
+    const room = data.room;
 
-    if (!rooms[data.room]) {
-      rooms[data.room] = [];
+    if (!room) return;
+
+    if (!rooms[room]) {
+      rooms[room] = [];
     }
 
-    rooms[data.room].push(data);
+    rooms[room].push(data);
 
-    io.to(data.room).emit("receive-message", data);
+    io.to(room).emit("receive-message", data);
   });
 
   socket.on("typing", (data) => {
     socket.broadcast.emit("typing", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("user disconnected:", socket.id);
   });
 
 });
