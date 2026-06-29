@@ -4,64 +4,177 @@ const { Server } = require("socket.io");
 const path = require("path");
 
 const app = express();
-const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
-  transports: ["polling"]   // IMPORTANT
+const server =
+http.createServer(app);
+
+/* CHAT MEMORY */
+const chats = {};
+
+const io =
+new Server(server,{
+cors:{
+origin:"*",
+methods:[
+"GET",
+"POST"
+]
+},
+transports:[
+"polling"
+]
 });
 
-/* STATIC FRONTEND */
-app.use(express.static(path.join(__dirname, "../frontend")));
+app.use(
+express.static(
+path.join(
+__dirname,
+"../frontend"
+)
+)
+);
 
-app.get("/", (req, res) => {
-  res.send("ChitChat backend running 💌");
+app.get(
+"/",
+(req,res)=>{
+res.send(
+"ChitChat backend running 💌"
+);
+}
+);
+
+app.get(
+"/health",
+(req,res)=>{
+res.json({
+status:"ok"
 });
-
-/* ROOM MEMORY */
-const rooms = {};
+}
+);
 
 /* SOCKET */
-io.on("connection", (socket) => {
 
-  console.log("CONNECTED:", socket.id);
+io.on(
+"connection",
+(socket)=>{
 
-  socket.on("join-room", (room) => {
-    if (!room) return;
+console.log(
+"CONNECTED:",
+socket.id
+);
 
-    socket.join(room);
+/* ROOM */
 
-    if (!rooms[room]) rooms[room] = [];
+socket.on(
+"join-room",
+(room)=>{
 
-    socket.emit("chat-history", rooms[room]);
-  });
+socket.join(
+room
+);
 
-  socket.on("send-message", (data) => {
+if(
+!chats[
+room
+]
+){
 
-    if (!data || !data.room) return;
+chats[
+room
+]=[];
 
-    if (!rooms[data.room]) rooms[data.room] = [];
+}
 
-    rooms[data.room].push(data);
+socket.emit(
+"chat-history",
+chats[
+room
+]
+);
 
-    io.to(data.room).emit("receive-message", data);
-  });
+}
+);
 
-  socket.on("typing", (data) => {
-    socket.broadcast.emit("typing", data);
-  });
+/* SEND */
 
-  socket.on("disconnect", () => {
-    console.log("DISCONNECTED:", socket.id);
-  });
+socket.on(
+"send-message",
+(data)=>{
+
+if(
+!data.room
+)
+return;
+
+if(
+!chats[
+data.room
+]
+){
+
+chats[
+data.room
+]=[];
+
+}
+
+chats[
+data.room
+]
+.push(
+data
+);
+
+io.to(
+data.room
+).emit(
+"receive-message",
+data
+);
 
 });
 
-const PORT = process.env.PORT || 3000;
+/* TYPING */
 
-server.listen(PORT, () => {
-  console.log("Server running on", PORT);
+socket.on(
+"typing",
+(data)=>{
+
+socket
+.broadcast
+.emit(
+"typing",
+data
+);
+
 });
+
+socket.on(
+"disconnect",
+()=>{
+
+console.log(
+"LEFT"
+);
+
+});
+
+}
+);
+
+const PORT =
+process.env.PORT
+||
+3000;
+
+server.listen(
+PORT,
+()=>{
+
+console.log(
+"RUNNING",
+PORT
+);
+
+}
+);
